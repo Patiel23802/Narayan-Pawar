@@ -1,0 +1,82 @@
+# Production stack: Postgres + Express + nginx (built admin SPA, proxies /api and /uploads).
+# Typical VPS: bind nginx + API to loopback; Caddy on the host terminates TLS and
+# reverse_proxies to nginx only (see DEPLOY.md).
+#
+# Setup:
+#   cp docker.env.example .env
+#   Edit .env — set JWT_SECRET and optional POSTGRES_PASSWORD.
+#   docker-compose build
+#   docker-compose up -d
+# Seed demo data once:
+#   docker-compose exec api npm run seed
+#
+# Mobile / external clients: point EXPO_PUBLIC_API_URL / app extra.apiUrl to the public URL
+# of this host (scheme + host + optional port when not 80/443), e.g. http://YOUR_IP/
+# Paths are unchanged: GET /health, POST /api/auth/login (no /api suffix on base URL).
+
+# Requires JWT_SECRET in `.env`; see docker.env.example
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: civic_pulse
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d civic_pulse"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      HOST: 0.0.0.0
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/civic_pulse
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env — see docker.env.example}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      # Same-origin when admin is behind nginx (or Caddy → nginx); set explicit origins if split.
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "4000"
+    ports:
+      - "${API_PUBLISH_PORT:-4000}:4000"
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+
+  web:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ""
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-80}:80"
+    restart: unless-stopped
+
+volumes:
+  pgdata:

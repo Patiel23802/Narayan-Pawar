@@ -1,0 +1,12 @@
+# Copy to /etc/caddy/Caddyfile on the VPS (adjust hostname if IP changes).
+# Hostname format: each IPv4 octet separated by dashes + ".sslip.io"
+# Example for 203.0.113.10 → 203-0-113-10.sslip.io
+#
+# Requires Docker .env:
+#   WEB_PORT=127.0.0.1:8080
+#   API_PUBLISH_PORT=127.0.0.1:4000
+
+YOUR-IP-DASHES.sslip.io {
+	encode gzip
+	reverse_proxy 127.0.0.1:8080
+}

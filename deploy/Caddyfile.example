@@ -1,0 +1,12 @@
+# Default production: Caddy (TLS) → Docker nginx on loopback :8080 → Express :4000.
+# Install on the VPS as /etc/caddy/Caddyfile, set hostname (DNS or sslip.io), then:
+#   sudo systemctl restart caddy
+#
+# Prerequisite: project .env binds Docker services to loopback:
+#   WEB_PORT=127.0.0.1:8080
+#   API_PUBLISH_PORT=127.0.0.1:4000
+
+civic.example.org {
+	encode gzip
+	reverse_proxy 127.0.0.1:8080
+}

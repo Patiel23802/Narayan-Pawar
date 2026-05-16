@@ -1,0 +1,23 @@
+# Alternative: Caddy terminates TLS, proxies /api and /uploads to Express, and
+# serves the admin SPA from disk (no Docker nginx). Not the default layout for
+# this repo — prefer deploy/Caddyfile.example (Caddy → nginx → Express).
+
+YOUR_DOMAIN {
+	encode gzip
+	route {
+		handle /api/* {
+			reverse_proxy 127.0.0.1:4000
+		}
+		handle /uploads/* {
+			reverse_proxy 127.0.0.1:4000
+		}
+		handle /health {
+			reverse_proxy 127.0.0.1:4000
+		}
+		handle {
+			root * /var/www/narayan-pawar-admin
+			try_files {path} /index.html
+			file_server
+		}
+	}
+}
