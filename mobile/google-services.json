@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "873405961951",
+    "project_id": "politics-c7b50",
+    "storage_bucket": "politics-c7b50.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:873405961951:android:b2b55a09fefffed4dafb6a",
+        "android_client_info": {
+          "package_name": "com.civicpulse.nagarsevak"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDvlWoKwJWhUGfIhcs5wbkMg7ZtGl3zqn0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
