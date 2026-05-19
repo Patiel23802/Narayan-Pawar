@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   sendOtp,
+  otpConfig,
   verifyOtp,
   setPassword,
   login,
@@ -17,6 +18,7 @@ import {
 import { requireAuth } from '../middleware/auth.js';
 
 const r = Router();
+r.get('/otp-config', otpConfig);
 r.post('/send-otp', validateSendOtp, sendOtp);
 r.post('/verify-otp', validateVerifyOtp, verifyOtp);
 r.post('/firebase-phone', validateFirebasePhone, verifyFirebasePhone);

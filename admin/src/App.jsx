@@ -16,6 +16,18 @@ const TOKEN_KEY = 'civic_admin_token';
 
 const api = axios.create({ baseURL: API_BASE });
 
+/** Clears stale session when API returns 401 (e.g. after redeploy / JWT_SECRET change). */
+let onUnauthorized = null;
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401 && onUnauthorized) {
+      onUnauthorized();
+    }
+    return Promise.reject(error);
+  },
+);
+
 function mediaUrl(p) {
   if (!p) return '';
   if (typeof p !== 'string') return '';
@@ -78,6 +90,25 @@ function App() {
     priority: 0,
   });
 
+  function clearSession() {
+    setToken('');
+    setTokenState('');
+    setComplaints([]);
+    setUpdates([]);
+    setUsers([]);
+    setProjects([]);
+    setRep(null);
+    setEmergencies([]);
+    setError('');
+  }
+
+  useEffect(() => {
+    onUnauthorized = clearSession;
+    return () => {
+      onUnauthorized = null;
+    };
+  }, []);
+
   useEffect(() => {
     if (token) {
       setToken(token);
@@ -97,12 +128,7 @@ function App() {
   }
 
   function logout() {
-    setToken('');
-    setTokenState('');
-    setComplaints([]);
-    setUpdates([]);
-    setUsers([]);
-    setRep(null);
+    clearSession();
   }
 
   async function refreshAll() {

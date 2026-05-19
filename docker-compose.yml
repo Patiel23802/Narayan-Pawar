@@ -42,8 +42,21 @@ services:
       DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/civic_pulse
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env — see docker.env.example}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      DEV_OTP: ${DEV_OTP:-123456}
+      EXPOSE_DEV_OTP: ${EXPOSE_DEV_OTP:-0}
+      SMS_PROVIDER: ${SMS_PROVIDER:-}
+      FAST2SMS_API_KEY: ${FAST2SMS_API_KEY:-}
+      MSG91_AUTH_KEY: ${MSG91_AUTH_KEY:-}
+      MSG91_TEMPLATE_ID: ${MSG91_TEMPLATE_ID:-}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER:-}
+      FIREBASE_SERVICE_ACCOUNT_PATH: ${FIREBASE_SERVICE_ACCOUNT_PATH:-/app/secrets/firebase-service-account.json}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-politics-c7b50}
       # Same-origin when admin is behind nginx (or Caddy → nginx); set explicit origins if split.
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
+    volumes:
+      - ./backend/secrets:/app/secrets:ro
     depends_on:
       db:
         condition: service_healthy

@@ -40,9 +40,17 @@ npm run dev    # http://localhost:4000
 
 Health check: `GET http://localhost:4000/health`
 
-### Dev OTP
+### OTP / SMS login
 
-`DEV_OTP` defaults to `123456` (see `.env.example`). `POST /api/auth/send-otp` stores this value for verification.
+Production requires a real SMS provider on the API. In `backend/.env` set one of:
+
+- **Fast2SMS** (India): `SMS_PROVIDER=fast2sms` and `FAST2SMS_API_KEY=...`
+- **MSG91**: `SMS_PROVIDER=msg91`, `MSG91_AUTH_KEY`, `MSG91_TEMPLATE_ID` (DLT-approved template)
+- **Twilio**: `SMS_PROVIDER=twilio`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`
+
+`POST /api/auth/send-otp` generates a random 6-digit code and sends it by SMS. Local dev without a provider falls back to `DEV_OTP=123456`.
+
+Mobile: set `EXPO_PUBLIC_OTP_MODE=backend` in `mobile/.env` (default). Firebase device SMS is optional (`EXPO_PUBLIC_OTP_MODE=firebase` + native APK rebuild).
 
 ### Seeded logins (after `npm run seed`)
 

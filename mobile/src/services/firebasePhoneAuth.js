@@ -29,9 +29,22 @@ function applyFirebaseAuthTestSettings() {
 
 applyFirebaseAuthTestSettings();
 
-/** True when Firebase Phone Auth should be used (config on + native module present). */
+/** True when Firebase Phone Auth can run (config on + native module present). */
 export function isFirebasePhoneAuthAvailable() {
   return firebasePhoneEnabledInConfig() && Boolean(authModule);
+}
+
+/**
+ * Use Firebase for OTP only when explicitly enabled and native module exists.
+ * Default: backend SMS (MSG91 / Fast2SMS / Twilio) — works in Expo Go and release APK.
+ */
+export function shouldUseFirebaseForOtp() {
+  const mode = String(process.env.EXPO_PUBLIC_OTP_MODE || 'backend').toLowerCase();
+  if (mode === 'firebase') return isFirebasePhoneAuthAvailable();
+  if (mode === 'backend') return false;
+  // legacy "auto": firebase if available unless backend is preferred
+  if (process.env.EXPO_PUBLIC_PREFER_BACKEND_SMS === '1') return false;
+  return isFirebasePhoneAuthAvailable();
 }
 
 export function toE164IndianMobile(mobile10) {

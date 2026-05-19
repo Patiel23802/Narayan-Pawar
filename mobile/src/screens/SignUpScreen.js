@@ -19,8 +19,8 @@ import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
 import {
   confirmFirebasePhoneOtp,
-  isFirebasePhoneAuthAvailable,
   sendFirebasePhoneOtp,
+  shouldUseFirebaseForOtp,
 } from '../services/firebasePhoneAuth';
 import { getApiErrorMessage } from '../utils/apiErrors';
 import { routeAfterAuth } from '../utils/authNavigation';
@@ -39,7 +39,7 @@ export function SignUpScreen() {
   const { locale, setLocale, t, fonts } = useLocale();
   const { checkMobile, sendOtp, verifyOtp, loginWithFirebasePhone, loginPassword } = useAuth();
 
-  const useFirebaseSms = useMemo(() => isFirebasePhoneAuthAvailable(), []);
+  const useFirebaseSms = useMemo(() => shouldUseFirebaseForOtp(), []);
 
   const [mobile, setMobile] = useState('');
   const [loading, setLoading] = useState(false);
@@ -49,7 +49,6 @@ export function SignUpScreen() {
   const [mode, setMode] = useState('otp');
   const [checking, setChecking] = useState(false);
   const [hasPasswordOnServer, setHasPasswordOnServer] = useState(false);
-
   const lastCheckedRef = useRef('');
   const verifyInFlightRef = useRef(false);
   const firebaseConfirmationRef = useRef(null);
@@ -352,7 +351,9 @@ export function SignUpScreen() {
                       <Text style={[styles.devHint, { fontFamily: fonts.regular }]}>{t('firebaseSmsHint')}</Text>
                     ) : __DEV__ ? (
                       <Text style={[styles.devHint, { fontFamily: fonts.regular }]}>{t('devOtpHint')}</Text>
-                    ) : null}
+                    ) : (
+                      <Text style={[styles.devHint, { fontFamily: fonts.regular }]}>{t('smsOtpHint')}</Text>
+                    )}
 
                     <View style={styles.resendRow}>
                       <Text style={[styles.resendHint, { fontFamily: fonts.medium }]}>{t('codeNotReceived')}</Text>

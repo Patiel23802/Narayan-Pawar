@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import { body, validationResult } from 'express-validator';
 import { User, OtpLog } from '../models/index.js';
 import { getFirebaseAdmin, isFirebaseConfigured, mobile10FromFirebasePhone } from '../utils/firebaseAdmin.js';
+import { isSmsConfigured, sendOtpSms } from '../utils/sms.js';
 import { signUserToken } from '../utils/jwt.js';
 import { Op } from 'sequelize';
 
@@ -19,6 +20,17 @@ function dummyLoginAllowed() {
   return process.env.NODE_ENV !== 'production' || process.env.ALLOW_DUMMY_LOGIN === '1';
 }
 
+export async function otpConfig(_req, res) {
+  return res.json({
+    firebase_configured: isFirebaseConfigured(),
+    firebase_project: process.env.FIREBASE_PROJECT_ID || 'politics-c7b50',
+    sms_configured: isSmsConfigured(),
+    sms_provider: process.env.SMS_PROVIDER || null,
+    /** When false, backend /send-otp only stores DEV_OTP (use Firebase on device or set SMS_PROVIDER). */
+    backend_sends_sms: isSmsConfigured(),
+  });
+}
+
 export const validateSendOtp = [body('mobile').trim().isLength({ min: 10, max: 15 })];
 
 export async function sendOtp(req, res) {
@@ -27,12 +39,27 @@ export async function sendOtp(req, res) {
     return res.status(400).json({ errors: errors.array() });
   }
   const { mobile } = req.body;
-  const otp = devOtp();
+  let otp;
+  if (isSmsConfigured()) {
+    otp = String(Math.floor(100000 + Math.random() * 900000));
+    try {
+      await sendOtpSms(mobile, otp);
+    } catch (err) {
+      console.error('SMS send failed:', err.message);
+      return res.status(502).json({ error: `Failed to send SMS: ${err.message}` });
+    }
+  } else {
+    // No server SMS provider — mobile should use Firebase Phone Auth on device, or DEV_OTP in dev.
+    otp = devOtp();
+  }
   const expires_at = new Date(Date.now() + OTP_TTL_MS);
   await OtpLog.create({ mobile, otp, expires_at, is_used: false });
+  const exposeDev =
+    process.env.EXPOSE_DEV_OTP === '1' ||
+    (process.env.NODE_ENV !== 'production' && !isSmsConfigured());
   return res.json({
     message: 'OTP sent successfully',
-    ...(process.env.NODE_ENV === 'development' ? { dev_otp: otp } : {}),
+    ...(exposeDev ? { dev_otp: otp } : {}),
   });
 }
 
@@ -47,7 +74,6 @@ export async function verifyOtp(req, res) {
     return res.status(400).json({ errors: errors.array() });
   }
   const { mobile, otp } = req.body;
-  const expected = devOtp();
   const row = await OtpLog.findOne({
     where: {
       mobile,
@@ -56,7 +82,8 @@ export async function verifyOtp(req, res) {
     },
     order: [['created_at', 'DESC']],
   });
-  const valid = otp === expected || (row && row.otp === otp);
+  const devBypass = !isSmsConfigured() && otp === devOtp();
+  const valid = devBypass || (row && row.otp === otp);
   if (!valid) {
     return res.status(400).json({ error: 'Invalid or expired OTP' });
   }

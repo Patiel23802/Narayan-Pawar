@@ -5,7 +5,10 @@ import path from 'path';
 let initialized = false;
 
 export function isFirebaseConfigured() {
-  return Boolean(process.env.FIREBASE_SERVICE_ACCOUNT_PATH?.trim());
+  const saPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH?.trim();
+  if (!saPath) return false;
+  const resolved = path.isAbsolute(saPath) ? saPath : path.resolve(process.cwd(), saPath);
+  return fs.existsSync(resolved);
 }
 
 export function getFirebaseAdmin() {

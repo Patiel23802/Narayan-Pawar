@@ -18,8 +18,8 @@ import { useLocale } from '../context/LocaleContext';
 import { useAuth } from '../context/AuthContext';
 import {
   confirmFirebasePhoneOtp,
-  isFirebasePhoneAuthAvailable,
   sendFirebasePhoneOtp,
+  shouldUseFirebaseForOtp,
 } from '../services/firebasePhoneAuth';
 import { getApiErrorMessage } from '../utils/apiErrors';
 import { routeAfterAuth } from '../utils/authNavigation';
@@ -28,7 +28,7 @@ export function LanguageLoginScreen() {
   const router = useRouter();
   const { locale, setLocale, t, fonts } = useLocale();
   const { checkMobile, sendOtp, verifyOtp, loginWithFirebasePhone, loginPassword } = useAuth();
-  const useFirebaseSms = useMemo(() => isFirebasePhoneAuthAvailable(), []);
+  const useFirebaseSms = useMemo(() => shouldUseFirebaseForOtp(), []);
 
   const [mobile, setMobile] = useState('');
   const [otp, setOtp] = useState('');
@@ -193,9 +193,13 @@ export function LanguageLoginScreen() {
                     />
                     <AppButton title={t('verify')} onPress={onVerify} loading={loading} />
                     <AppButton title={t('resendOtp')} onPress={onSendOtp} loading={loading} variant="secondary" />
-                    {__DEV__ ? (
+                    {useFirebaseSms ? (
+                      <Text style={[styles.hint, { fontFamily: fonts.regular }]}>{t('firebaseSmsHint')}</Text>
+                    ) : __DEV__ ? (
                       <Text style={[styles.hint, { fontFamily: fonts.regular }]}>{t('devOtpHint')}</Text>
-                    ) : null}
+                    ) : (
+                      <Text style={[styles.hint, { fontFamily: fonts.regular }]}>{t('smsOtpHint')}</Text>
+                    )}
                   </>
                 ) : null}
                 {hasPasswordOnServer ? (

@@ -98,6 +98,7 @@
   "female": "स्त्री",
   "other": "इतर",
   "devOtpHint": "विकास OTP: 123456",
+  "smsOtpHint": "तुमच्या फोनवर SMS द्वारे 6 अंकी कोड पाठवला जाईल.",
   "devLoginHint": "Dev login — Mobile: 8888888888, Password: dummy123",
   "loginPassword": "पासवर्डने लॉगिन",
   "enterValidMobile": "कृपया वैध १०-अंकी मोबाईल नंबर टाका",

@@ -98,6 +98,7 @@
   "female": "Female",
   "other": "Other",
   "devOtpHint": "Dev OTP: 123456",
+  "smsOtpHint": "A 6-digit code will be sent to your phone by SMS.",
   "devLoginHint": "Dev login — Mobile: 8888888888, Password: dummy123",
   "loginPassword": "Login with password",
   "enterValidMobile": "Enter a valid 10-digit mobile number",
