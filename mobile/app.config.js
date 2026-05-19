@@ -17,6 +17,9 @@ module.exports = ({ config }) => {
   if (!plugins.some((p) => p === '@react-native-firebase/app' || p?.[0] === '@react-native-firebase/app')) {
     plugins.push('@react-native-firebase/app');
   }
+  if (!plugins.some((p) => p === '@react-native-firebase/auth' || p?.[0] === '@react-native-firebase/auth')) {
+    plugins.push('@react-native-firebase/auth');
+  }
   if (!plugins.some((p) => p?.[0] === 'expo-build-properties')) {
     plugins.push([
       'expo-build-properties',

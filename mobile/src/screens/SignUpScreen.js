@@ -152,7 +152,12 @@ export function SignUpScreen() {
     setLoading(true);
     try {
       let u;
-      if (useFirebaseSms && firebaseConfirmationRef.current) {
+      if (useFirebaseSms) {
+        if (!firebaseConfirmationRef.current) {
+          throw new Error(
+            'Firebase session expired. Tap Resend OTP and enter the code from Firebase test numbers (or SMS).'
+          );
+        }
         const { idToken } = await confirmFirebasePhoneOtp(firebaseConfirmationRef.current, otp);
         firebaseConfirmationRef.current = null;
         u = await loginWithFirebasePhone(idToken);

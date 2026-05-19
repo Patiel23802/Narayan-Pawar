@@ -12,7 +12,20 @@
           "package_name": "com.civicpulse.nagarsevak"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "873405961951-c353udg2u8ibpctss85corr37n2jva5j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.civicpulse.nagarsevak",
+            "certificate_hash": "28700c0093a0cb320699e5affbd688fedefe85e1"
+          }
+        },
+        {
+          "client_id": "873405961951-1s9d87d4la9dodavuvq1shrm2c5cjnnt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDvlWoKwJWhUGfIhcs5wbkMg7ZtGl3zqn0"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "873405961951-1s9d87d4la9dodavuvq1shrm2c5cjnnt.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

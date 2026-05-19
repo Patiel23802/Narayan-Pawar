@@ -16,6 +16,19 @@ function firebasePhoneEnabledInConfig() {
   return flag === '1' || flag === 'true';
 }
 
+/** Dev-only: skip Play Integrity when google-services.json has no oauth_client yet. */
+function applyFirebaseAuthTestSettings() {
+  if (!authModule) return;
+  const disable =
+    process.env.EXPO_PUBLIC_FIREBASE_DISABLE_APP_VERIFICATION === '1' ||
+    process.env.EXPO_PUBLIC_FIREBASE_DISABLE_APP_VERIFICATION === 'true';
+  if (disable) {
+    authModule().settings.appVerificationDisabledForTesting = true;
+  }
+}
+
+applyFirebaseAuthTestSettings();
+
 /** True when Firebase Phone Auth should be used (config on + native module present). */
 export function isFirebasePhoneAuthAvailable() {
   return firebasePhoneEnabledInConfig() && Boolean(authModule);
@@ -36,13 +49,19 @@ function mapFirebasePhoneError(err) {
   const code = err?.code || '';
   if (code === 'auth/missing-client-identifier') {
     return (
-      'Firebase cannot verify this app. Add your APK signing SHA-1 and SHA-256 in Firebase Console ' +
-      '(Project settings → Android app → Add fingerprint), download a new google-services.json, ' +
-      'then rebuild and reinstall the app. Run: bash scripts/print-android-sha.sh'
+      'Firebase cannot verify this app. Your google-services.json still has empty oauth_client. ' +
+      'In Google Cloud Console create an Android OAuth client (package com.civicpulse.nagarsevak + your SHA-1), ' +
+      'enable Phone + Google sign-in in Firebase Authentication, re-download google-services.json, then rebuild the APK.'
     );
   }
   if (code === 'auth/app-not-authorized') {
     return 'This app is not authorized for Firebase Phone Auth. Check package name com.civicpulse.nagarsevak and SHA fingerprints in Firebase Console.';
+  }
+  if (code === 'auth/invalid-verification-code') {
+    return 'Wrong OTP. For Firebase test numbers use the exact code from Firebase Console (Authentication → Phone → test numbers).';
+  }
+  if (code === 'auth/code-expired' || code === 'auth/session-expired') {
+    return 'OTP expired. Tap Resend OTP and try again.';
   }
   return err?.message || String(err);
 }
@@ -65,9 +84,13 @@ export async function confirmFirebasePhoneOtp(confirmation, code) {
   if (!confirmation) {
     throw new Error('Request OTP first');
   }
-  const credential = await confirmation.confirm(String(code).trim());
-  const idToken = await credential.user.getIdToken();
-  return { idToken, phoneNumber: credential.user.phoneNumber };
+  try {
+    const credential = await confirmation.confirm(String(code).trim());
+    const idToken = await credential.user.getIdToken();
+    return { idToken, phoneNumber: credential.user.phoneNumber };
+  } catch (err) {
+    throw new Error(mapFirebasePhoneError(err));
+  }
 }
 
 export function getFirebaseProjectHint() {
