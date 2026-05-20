@@ -26,6 +26,12 @@ if ! command -v java &>/dev/null; then
   exit 1
 fi
 
+if [ ! -f "google-services.json" ]; then
+  echo "Error: mobile/google-services.json not found." >&2
+  echo "Download from Firebase Console (politics-c7b50) after adding your SHA-1." >&2
+  exit 1
+fi
+
 if [ ! -d "android" ]; then
   echo "Error: android/ folder not found." >&2
   echo "" >&2
@@ -98,6 +104,9 @@ if [ -f "$APK_PATH" ]; then
   echo "Done. APK created at:"
   echo "  $APK_PATH"
   echo ""
+  if [ -f "$PROJECT_ROOT/scripts/verify-firebase-android.sh" ]; then
+    bash "$PROJECT_ROOT/scripts/verify-firebase-android.sh" || true
+  fi
 else
   echo "Error: APK was not created at expected path." >&2
   exit 1
