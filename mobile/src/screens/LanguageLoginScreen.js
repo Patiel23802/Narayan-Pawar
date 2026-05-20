@@ -17,7 +17,9 @@ import { colors, radii, spacing } from '../constants/theme';
 import { useLocale } from '../context/LocaleContext';
 import { useAuth } from '../context/AuthContext';
 import {
+  assertFirebaseOtpAvailable,
   confirmFirebasePhoneOtp,
+  isFirebaseOnlyOtpMode,
   sendFirebasePhoneOtp,
   shouldUseFirebaseForOtp,
 } from '../services/firebasePhoneAuth';
@@ -83,7 +85,10 @@ export function LanguageLoginScreen() {
     }
     setLoading(true);
     try {
-      if (useFirebaseSms) {
+      if (isFirebaseOnlyOtpMode()) {
+        assertFirebaseOtpAvailable();
+        firebaseConfirmationRef.current = await sendFirebasePhoneOtp(mobile10);
+      } else if (useFirebaseSms) {
         firebaseConfirmationRef.current = await sendFirebasePhoneOtp(mobile10);
       } else {
         await sendOtp(mobile10);
@@ -105,7 +110,12 @@ export function LanguageLoginScreen() {
     setLoading(true);
     try {
       let u;
-      if (useFirebaseSms && firebaseConfirmationRef.current) {
+      if (isFirebaseOnlyOtpMode() || (useFirebaseSms && firebaseConfirmationRef.current)) {
+        assertFirebaseOtpAvailable();
+        if (!firebaseConfirmationRef.current) {
+          Alert.alert(t('error'), t('otpSendFailed'));
+          return;
+        }
         const { idToken } = await confirmFirebasePhoneOtp(firebaseConfirmationRef.current, code);
         firebaseConfirmationRef.current = null;
         u = await loginWithFirebasePhone(idToken);

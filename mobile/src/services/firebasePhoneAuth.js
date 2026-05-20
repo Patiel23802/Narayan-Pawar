@@ -10,10 +10,24 @@ try {
   authModule = null;
 }
 
+function getOtpMode() {
+  const fromExtra = Constants.expoConfig?.extra?.otpMode;
+  const raw = fromExtra ?? process.env.EXPO_PUBLIC_OTP_MODE ?? 'firebase';
+  return String(raw).trim().toLowerCase();
+}
+
 function firebasePhoneEnabledInConfig() {
+  const fromExtra = Constants.expoConfig?.extra?.firebasePhone;
+  if (fromExtra === false) return false;
+  if (fromExtra === true) return true;
   const flag = process.env.EXPO_PUBLIC_FIREBASE_PHONE;
   if (flag === '0' || flag === 'false') return false;
-  return flag === '1' || flag === 'true';
+  return flag === '1' || flag === 'true' || fromExtra === undefined;
+}
+
+/** App is configured for Firebase-only OTP (no backend /send-otp). */
+export function isFirebaseOnlyOtpMode() {
+  return getOtpMode() === 'firebase';
 }
 
 /** Dev-only: skip Play Integrity when google-services.json has no oauth_client yet. */
@@ -35,14 +49,25 @@ export function isFirebasePhoneAuthAvailable() {
 }
 
 /**
- * Use Firebase for OTP only when explicitly enabled and native module exists.
- * Default: backend SMS (MSG91 / Fast2SMS / Twilio) — works in Expo Go and release APK.
+ * Throws if the app is Firebase-only but the native module is missing (wrong build).
+ * Call before send/verify OTP so we never silently fall back to backend DEV_OTP 123456.
  */
+export function assertFirebaseOtpAvailable() {
+  if (!isFirebaseOnlyOtpMode()) return;
+  if (isFirebasePhoneAuthAvailable()) return;
+  const missingNative = !authModule;
+  throw new Error(
+    missingNative
+      ? 'Firebase Phone Auth is not in this APK. Run: npx expo prebuild --platform android --clean && npm run build:apk (not Expo Go).'
+      : 'Firebase Phone Auth is disabled. Set EXPO_PUBLIC_FIREBASE_PHONE=1 and rebuild the APK.'
+  );
+}
+
+/** Use Firebase for OTP when mode is firebase and native module exists. */
 export function shouldUseFirebaseForOtp() {
-  const mode = String(process.env.EXPO_PUBLIC_OTP_MODE || 'backend').toLowerCase();
+  const mode = getOtpMode();
   if (mode === 'firebase') return isFirebasePhoneAuthAvailable();
   if (mode === 'backend') return false;
-  // legacy "auto": firebase if available unless backend is preferred
   if (process.env.EXPO_PUBLIC_PREFER_BACKEND_SMS === '1') return false;
   return isFirebasePhoneAuthAvailable();
 }
@@ -55,20 +80,15 @@ export function toE164IndianMobile(mobile10) {
   return `+91${digits}`;
 }
 
-/**
- * Firebase sends the SMS. Returns a confirmation object — call confirmPhoneOtp with the 6-digit code.
- */
 function mapFirebasePhoneError(err) {
   const code = err?.code || '';
   if (code === 'auth/missing-client-identifier') {
     return (
-      'Firebase cannot verify this app. Your google-services.json still has empty oauth_client. ' +
-      'In Google Cloud Console create an Android OAuth client (package com.civicpulse.nagarsevak + your SHA-1), ' +
-      'enable Phone + Google sign-in in Firebase Authentication, re-download google-services.json, then rebuild the APK.'
+      'Firebase cannot verify this app. Add your APK SHA-1 in Firebase Console, re-download google-services.json, then: npx expo prebuild --platform android --clean && npm run build:apk'
     );
   }
   if (code === 'auth/app-not-authorized') {
-    return 'This app is not authorized for Firebase Phone Auth. Check package name com.civicpulse.nagarsevak and SHA fingerprints in Firebase Console.';
+    return 'This app is not authorized for Firebase Phone Auth. Check package com.civicpulse.nagarsevak and SHA fingerprints in Firebase Console.';
   }
   if (code === 'auth/invalid-verification-code') {
     return 'Wrong OTP. For Firebase test numbers use the exact code from Firebase Console (Authentication → Phone → test numbers).';
@@ -80,11 +100,7 @@ function mapFirebasePhoneError(err) {
 }
 
 export async function sendFirebasePhoneOtp(mobile10) {
-  if (!isFirebasePhoneAuthAvailable()) {
-    throw new Error(
-      'Firebase SMS is not available. Rebuild the app with google-services.json and EXPO_PUBLIC_FIREBASE_PHONE=1.'
-    );
-  }
+  assertFirebaseOtpAvailable();
   const phone = toE164IndianMobile(mobile10);
   try {
     return await authModule().signInWithPhoneNumber(phone);
@@ -94,6 +110,7 @@ export async function sendFirebasePhoneOtp(mobile10) {
 }
 
 export async function confirmFirebasePhoneOtp(confirmation, code) {
+  assertFirebaseOtpAvailable();
   if (!confirmation) {
     throw new Error('Request OTP first');
   }
@@ -107,5 +124,5 @@ export async function confirmFirebasePhoneOtp(confirmation, code) {
 }
 
 export function getFirebaseProjectHint() {
-  return Constants.expoConfig?.extra?.firebaseProjectId || null;
+  return Constants.expoConfig?.extra?.firebaseProjectId || 'politics-c7b50';
 }

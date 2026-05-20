@@ -51,6 +51,7 @@ services:
       TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
       TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER:-}
+      OTP_AUTH_MODE: ${OTP_AUTH_MODE:-firebase}
       FIREBASE_SERVICE_ACCOUNT_PATH: ${FIREBASE_SERVICE_ACCOUNT_PATH:-/app/secrets/firebase-service-account.json}
       FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-politics-c7b50}
       # Same-origin when admin is behind nginx (or Caddy → nginx); set explicit origins if split.

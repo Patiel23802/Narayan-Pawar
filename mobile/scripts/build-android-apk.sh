@@ -71,6 +71,10 @@ if [[ "$(uname -s)" == "Darwin" ]] && [ -d "$HERMES_OSX_BIN" ]; then
 fi
 
 echo "Building Android release APK..."
+echo "OTP mode: ${EXPO_PUBLIC_OTP_MODE:-firebase} (from .env; also baked via app.config.js extra)"
+if [ "${EXPO_PUBLIC_OTP_MODE:-firebase}" = "firebase" ]; then
+  echo "Firebase-only: run 'npx expo prebuild --platform android --clean' after google-services.json changes."
+fi
 echo "Using single ABI (arm64-v8a) to reduce memory use during Hermes compile."
 
 # Autolinking stores absolute paths to node_modules. If the project folder was moved or

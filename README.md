@@ -40,17 +40,13 @@ npm run dev    # http://localhost:4000
 
 Health check: `GET http://localhost:4000/health`
 
-### OTP / SMS login
+### OTP / SMS login (Firebase-only)
 
-Production requires a real SMS provider on the API. In `backend/.env` set one of:
+1. **Mobile** — Firebase Phone Auth sends SMS on device. In `mobile/.env`: `EXPO_PUBLIC_OTP_MODE=firebase`, then `npx expo prebuild --platform android --clean && npm run build:apk`.
+2. **API** — `OTP_AUTH_MODE=firebase` in root `.env`; place `backend/secrets/firebase-service-account.json`; restart `docker-compose up -d api`.
+3. Login: `POST /api/auth/firebase-phone` with Firebase `idToken` after OTP. Backend `/send-otp` and dev OTP `123456` are disabled in firebase mode.
 
-- **Fast2SMS** (India): `SMS_PROVIDER=fast2sms` and `FAST2SMS_API_KEY=...`
-- **MSG91**: `SMS_PROVIDER=msg91`, `MSG91_AUTH_KEY`, `MSG91_TEMPLATE_ID` (DLT-approved template)
-- **Twilio**: `SMS_PROVIDER=twilio`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`
-
-`POST /api/auth/send-otp` generates a random 6-digit code and sends it by SMS. Local dev without a provider falls back to `DEV_OTP=123456`.
-
-Mobile: set `EXPO_PUBLIC_OTP_MODE=backend` in `mobile/.env` (default). Firebase device SMS is optional (`EXPO_PUBLIC_OTP_MODE=firebase` + native APK rebuild).
+Optional backend SMS: set `OTP_AUTH_MODE=backend`, configure `SMS_PROVIDER` (Fast2SMS / MSG91 / Twilio), and `EXPO_PUBLIC_OTP_MODE=backend` on mobile.
 
 ### Seeded logins (after `npm run seed`)
 

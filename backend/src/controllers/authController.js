@@ -22,6 +22,7 @@ function dummyLoginAllowed() {
 
 export async function otpConfig(_req, res) {
   return res.json({
+    otp_auth_mode: process.env.OTP_AUTH_MODE || 'backend',
     firebase_configured: isFirebaseConfigured(),
     firebase_project: process.env.FIREBASE_PROJECT_ID || 'politics-c7b50',
     sms_configured: isSmsConfigured(),
@@ -33,10 +34,19 @@ export async function otpConfig(_req, res) {
 
 export const validateSendOtp = [body('mobile').trim().isLength({ min: 10, max: 15 })];
 
+function firebaseOnlyAuth() {
+  return String(process.env.OTP_AUTH_MODE || '').trim().toLowerCase() === 'firebase';
+}
+
 export async function sendOtp(req, res) {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
+  }
+  if (firebaseOnlyAuth()) {
+    return res.status(400).json({
+      error: 'OTP is sent by Firebase on the mobile app. Rebuild the APK with Firebase Phone Auth enabled.',
+    });
   }
   const { mobile } = req.body;
   let otp;
@@ -82,7 +92,7 @@ export async function verifyOtp(req, res) {
     },
     order: [['created_at', 'DESC']],
   });
-  const devBypass = !isSmsConfigured() && otp === devOtp();
+  const devBypass = !firebaseOnlyAuth() && !isSmsConfigured() && otp === devOtp();
   const valid = devBypass || (row && row.otp === otp);
   if (!valid) {
     return res.status(400).json({ error: 'Invalid or expired OTP' });

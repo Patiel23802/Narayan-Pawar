@@ -18,7 +18,9 @@ import { colors, radii, spacing } from '../constants/theme';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
 import {
+  assertFirebaseOtpAvailable,
   confirmFirebasePhoneOtp,
+  isFirebaseOnlyOtpMode,
   sendFirebasePhoneOtp,
   shouldUseFirebaseForOtp,
 } from '../services/firebasePhoneAuth';
@@ -110,7 +112,10 @@ export function SignUpScreen() {
     }
     setLoading(true);
     try {
-      if (useFirebaseSms) {
+      if (isFirebaseOnlyOtpMode()) {
+        assertFirebaseOtpAvailable();
+        firebaseConfirmationRef.current = await sendFirebasePhoneOtp(mobile10);
+      } else if (useFirebaseSms) {
         firebaseConfirmationRef.current = await sendFirebasePhoneOtp(mobile10);
       } else {
         await sendOtp(mobile10);
@@ -151,7 +156,8 @@ export function SignUpScreen() {
     setLoading(true);
     try {
       let u;
-      if (useFirebaseSms) {
+      if (isFirebaseOnlyOtpMode() || useFirebaseSms) {
+        assertFirebaseOtpAvailable();
         if (!firebaseConfirmationRef.current) {
           throw new Error(
             'Firebase session expired. Tap Resend OTP and enter the code from Firebase test numbers (or SMS).'

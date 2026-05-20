@@ -32,12 +32,21 @@ module.exports = ({ config }) => {
     ]);
   }
 
+  const otpMode = String(process.env.EXPO_PUBLIC_OTP_MODE || 'firebase').toLowerCase();
+  const firebasePhone =
+    process.env.EXPO_PUBLIC_FIREBASE_PHONE !== '0' &&
+    process.env.EXPO_PUBLIC_FIREBASE_PHONE !== 'false';
+
   return {
     ...config,
     plugins,
     extra: {
       ...config.extra,
       apiUrl,
+      /** Baked into release APK — do not rely on .env alone at Gradle bundle time. */
+      otpMode,
+      firebasePhone,
+      firebaseProjectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'politics-c7b50',
     },
   };
 };
