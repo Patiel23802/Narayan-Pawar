@@ -90,6 +90,15 @@ echo "Clearing Android autolinking / CMake caches that embed absolute paths..."
 rm -rf "$PROJECT_ROOT/android/build/generated/autolinking"
 rm -rf "$PROJECT_ROOT/android/app/.cxx"
 
+# Ensure native project has the latest Firebase config (oauth_client + certificate_hash).
+mkdir -p android/app
+cp -f google-services.json android/app/google-services.json
+if ! grep -q certificate_hash android/app/google-services.json 2>/dev/null; then
+  echo "Error: android/app/google-services.json has no certificate_hash." >&2
+  echo "In Firebase Console add SHA-1 AND SHA-256, re-download google-services.json, then rebuild." >&2
+  exit 1
+fi
+
 cd android
 ./gradlew --stop 2>/dev/null || true
 # Metro-copied drawables under app/build/generated can go stale; clean app module so image requires rebundle.

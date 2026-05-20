@@ -84,7 +84,11 @@ function mapFirebasePhoneError(err) {
   const code = err?.code || '';
   if (code === 'auth/missing-client-identifier') {
     return (
-      'Firebase cannot verify this app. Add your APK SHA-1 in Firebase Console, re-download google-services.json, then: npx expo prebuild --platform android --clean && npm run build:apk'
+      'Firebase cannot verify this app (Play Integrity / reCAPTCHA failed). ' +
+      'In Firebase Console → Project settings → Android app: add BOTH SHA-1 and SHA-256 ' +
+      '(run: bash scripts/print-android-sha.sh), enable Phone sign-in, re-download google-services.json, ' +
+      'then: npx expo prebuild --platform android --clean && npm run build:apk. ' +
+      'For sideload testing only, set EXPO_PUBLIC_FIREBASE_DISABLE_APP_VERIFICATION=1 and use Firebase test phone numbers.'
     );
   }
   if (code === 'auth/app-not-authorized') {
