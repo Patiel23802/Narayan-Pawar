@@ -1,7 +1,12 @@
 import bcrypt from 'bcryptjs';
 import { body, validationResult } from 'express-validator';
 import { User, OtpLog } from '../models/index.js';
-import { getFirebaseAdmin, isFirebaseConfigured, mobile10FromFirebasePhone } from '../utils/firebaseAdmin.js';
+import {
+  isFirebaseConfigured,
+  mobile10FromFirebasePhone,
+  normalizeMobile10,
+  verifyFirebaseIdToken,
+} from '../utils/firebaseAdmin.js';
 import { isSmsConfigured, sendOtpSms } from '../utils/sms.js';
 import { signUserToken } from '../utils/jwt.js';
 import { Op } from 'sequelize';
@@ -21,8 +26,10 @@ function dummyLoginAllowed() {
 }
 
 export async function otpConfig(_req, res) {
+  const mode = String(process.env.OTP_AUTH_MODE || '').trim().toLowerCase();
+  const defaultMode = process.env.NODE_ENV === 'production' ? 'firebase' : 'backend';
   return res.json({
-    otp_auth_mode: process.env.OTP_AUTH_MODE || 'backend',
+    otp_auth_mode: mode || defaultMode,
     firebase_configured: isFirebaseConfigured(),
     firebase_project: process.env.FIREBASE_PROJECT_ID || 'politics-c7b50',
     sms_configured: isSmsConfigured(),
@@ -106,7 +113,19 @@ export async function verifyOtp(req, res) {
   return res.json({ token, user: userToPublic(user) });
 }
 
-export const validateFirebasePhone = [body('idToken').trim().notEmpty()];
+export const validateFirebasePhone = [
+  body('idToken').optional().trim().notEmpty(),
+  body('firebaseIdToken').optional().trim().notEmpty(),
+  body('mobile').optional().trim().isLength({ min: 10, max: 15 }),
+  body('phone').optional().trim().isLength({ min: 10, max: 15 }),
+  body().custom((_, { req }) => {
+    const token = req.body?.idToken || req.body?.firebaseIdToken;
+    if (!token) {
+      throw new Error('idToken or firebaseIdToken is required');
+    }
+    return true;
+  }),
+];
 
 /** Exchange Firebase Phone Auth idToken (after SMS verified on device) for Civic Pulse JWT. */
 export async function verifyFirebasePhone(req, res) {
@@ -118,34 +137,32 @@ export async function verifyFirebasePhone(req, res) {
     return res.status(503).json({ error: 'Firebase is not configured on the server' });
   }
 
-  let firebaseAdmin;
-  try {
-    firebaseAdmin = getFirebaseAdmin();
-  } catch (err) {
-    console.error('Firebase init failed:', err.message);
-    return res.status(503).json({ error: 'Firebase is not configured on the server' });
-  }
-  if (!firebaseAdmin) {
-    return res.status(503).json({ error: 'Firebase is not configured on the server' });
-  }
+  const idToken = req.body.idToken || req.body.firebaseIdToken;
+  const requestedMobile = normalizeMobile10(req.body.mobile || req.body.phone);
 
-  const { idToken } = req.body;
   let decoded;
   try {
-    decoded = await firebaseAdmin.auth().verifyIdToken(idToken);
+    decoded = await verifyFirebaseIdToken(idToken);
   } catch {
     return res.status(401).json({ error: 'Invalid or expired Firebase token' });
   }
 
-  const mobile = mobile10FromFirebasePhone(decoded.phone_number);
-  if (!mobile) {
+  const tokenMobile = mobile10FromFirebasePhone(decoded.phone_number);
+  if (!tokenMobile) {
     return res.status(400).json({ error: 'Phone number missing from Firebase token' });
   }
 
-  const user = await upsertVerifiedCitizen(mobile);
+  if (requestedMobile && requestedMobile !== tokenMobile) {
+    return res.status(401).json({ error: 'Invalid Firebase token for this phone number' });
+  }
+
+  const user = await upsertVerifiedCitizen(tokenMobile);
   const token = signUserToken(user);
   return res.json({ token, user: userToPublic(user) });
 }
+
+/** Indipix-compatible alias: POST /api/auth/verify-firebase-otp */
+export const verifyFirebaseOtp = verifyFirebasePhone;
 
 export const validateSetPassword = [
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
