@@ -37,6 +37,20 @@ function parseServiceAccountFromEnv() {
     }
   }
 
+  // Any *firebase-adminsdk*.json dropped in backend/secrets/ (e.g. from Firebase Console download).
+  for (const secretsDir of [
+    path.resolve(process.cwd(), 'secrets'),
+    path.resolve(__dirname, '../../secrets'),
+  ]) {
+    if (!fs.existsSync(secretsDir)) continue;
+    const match = fs
+      .readdirSync(secretsDir)
+      .find((name) => name.includes('firebase-adminsdk') && name.endsWith('.json'));
+    if (match) {
+      return JSON.parse(fs.readFileSync(path.join(secretsDir, match), 'utf8'));
+    }
+  }
+
   return null;
 }
 

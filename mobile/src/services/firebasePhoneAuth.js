@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import { formatFirebasePhoneOtpSendError } from '../utils/firebasePhoneOtpErrors';
 
 let authModule = null;
 
@@ -83,16 +84,18 @@ export function toE164IndianMobile(mobile10) {
 function mapFirebasePhoneError(err) {
   const code = err?.code || '';
   if (code === 'auth/missing-client-identifier') {
-    return (
+    return formatFirebasePhoneOtpSendError(
       'Firebase cannot verify this app (Play Integrity / reCAPTCHA failed). ' +
-      'In Firebase Console → Project settings → Android app: add BOTH SHA-1 and SHA-256 ' +
-      '(run: bash scripts/print-android-sha.sh), enable Phone sign-in, re-download google-services.json, ' +
-      'then: npx expo prebuild --platform android --clean && npm run build:apk. ' +
-      'For sideload testing only, set EXPO_PUBLIC_FIREBASE_DISABLE_APP_VERIFICATION=1 and use Firebase test phone numbers.'
+        'In Firebase Console → Project settings → Android app: add BOTH SHA-1 and SHA-256 ' +
+        '(run: bash scripts/print-android-sha.sh), enable Phone sign-in, re-download google-services.json, ' +
+        'then: npx expo prebuild --platform android --clean && npm run build:apk. ' +
+        'For sideload testing only, set EXPO_PUBLIC_FIREBASE_DISABLE_APP_VERIFICATION=1 and use Firebase test phone numbers.'
     );
   }
   if (code === 'auth/app-not-authorized') {
-    return 'This app is not authorized for Firebase Phone Auth. Check package com.civicpulse.nagarsevak and SHA fingerprints in Firebase Console.';
+    return formatFirebasePhoneOtpSendError(
+      'This app is not authorized for Firebase Phone Auth. Check package com.civicpulse.nagarsevak and SHA fingerprints in Firebase Console.'
+    );
   }
   if (code === 'auth/invalid-verification-code') {
     return 'Wrong OTP. For Firebase test numbers use the exact code from Firebase Console (Authentication → Phone → test numbers).';
@@ -100,7 +103,7 @@ function mapFirebasePhoneError(err) {
   if (code === 'auth/code-expired' || code === 'auth/session-expired') {
     return 'OTP expired. Tap Resend OTP and try again.';
   }
-  return err?.message || String(err);
+  return formatFirebasePhoneOtpSendError(err?.message || String(err));
 }
 
 export async function sendFirebasePhoneOtp(mobile10) {

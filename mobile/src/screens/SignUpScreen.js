@@ -165,7 +165,7 @@ export function SignUpScreen() {
         }
         const { idToken } = await confirmFirebasePhoneOtp(firebaseConfirmationRef.current, otp);
         firebaseConfirmationRef.current = null;
-        u = await loginWithFirebasePhone(idToken);
+        u = await loginWithFirebasePhone(mobile10, idToken);
       } else {
         u = await verifyOtp(mobile10, otp);
       }

@@ -118,7 +118,7 @@ export function LanguageLoginScreen() {
         }
         const { idToken } = await confirmFirebasePhoneOtp(firebaseConfirmationRef.current, code);
         firebaseConfirmationRef.current = null;
-        u = await loginWithFirebasePhone(idToken);
+        u = await loginWithFirebasePhone(mobile10, idToken);
       } else {
         u = await verifyOtp(mobile10, code);
       }

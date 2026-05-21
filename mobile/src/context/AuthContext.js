@@ -69,15 +69,28 @@ export function AuthProvider({ children }) {
     [applySession]
   );
 
-  /** After Firebase verifies the SMS OTP, exchange Firebase idToken for Civic Pulse JWT. */
+  /**
+   * After Firebase verifies the SMS OTP on device, exchange idToken for app JWT.
+   * Sends mobile for server-side cross-check (Indipix-style verify-firebase-otp).
+   */
   const loginWithFirebasePhone = useCallback(
-    async (idToken) => {
-      const res = await api.post('/api/auth/firebase-phone', { idToken });
+    async (mobile, idToken) => {
+      const mobile10 = String(mobile || '').replace(/\D/g, '').slice(-10);
+      const res = await api.post('/api/auth/verify-firebase-otp', {
+        mobile: mobile10,
+        idToken,
+        firebaseIdToken: idToken,
+      });
       await applySession(res.data.token, res.data.user);
       return res.data.user;
     },
     [applySession]
   );
+
+  const fetchOtpConfig = useCallback(async () => {
+    const res = await api.get('/api/auth/otp-config');
+    return res.data;
+  }, []);
 
   const loginPassword = useCallback(
     async (mobile, password) => {
@@ -111,6 +124,7 @@ export function AuthProvider({ children }) {
       sendOtp,
       verifyOtp,
       loginWithFirebasePhone,
+      fetchOtpConfig,
       loginPassword,
       setPassword,
       logout,
@@ -125,6 +139,7 @@ export function AuthProvider({ children }) {
       sendOtp,
       verifyOtp,
       loginWithFirebasePhone,
+      fetchOtpConfig,
       loginPassword,
       setPassword,
       logout,
