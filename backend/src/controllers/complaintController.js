@@ -104,7 +104,7 @@ export const validateStatus = [
   body('status')
     .isIn(['registered', 'assigned', 'in_progress', 'resolved', 'rejected'])
     .withMessage('Invalid status'),
-  body('assigned_officer_name').optional().isString(),
+  body('assigned_officer_name').optional({ nullable: true }).isString(),
 ];
 
 export async function updateComplaintStatus(req, res) {

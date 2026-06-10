@@ -159,7 +159,10 @@ function App() {
       setError('');
       await api.put(`/api/complaints/${id}/status`, {
         status,
-        assigned_officer_name: assignedOfficerName || null,
+        assigned_officer_name:
+          assignedOfficerName != null && String(assignedOfficerName).trim()
+            ? String(assignedOfficerName).trim()
+            : null,
       });
       await refreshAll();
     } catch (err) {
