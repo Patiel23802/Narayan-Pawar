@@ -12,11 +12,13 @@ import { requireAuth, requireAdmin } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
 
 const r = Router();
-r.get('/', requireAuth(), requireAdmin, listUsers);
-r.put('/:id', requireAuth(), requireAdmin, validateAdminUserUpdate, adminUpdateUser);
+// Register /profile before /:id — otherwise PUT /profile matches /:id with id="profile"
+// and incorrectly requires admin access.
 r.use(requireAuth());
 r.get('/profile', getProfile);
 r.put('/profile', validateProfile, putProfile);
 r.post('/upload-avatar', upload.single('avatar'), uploadAvatar);
+r.get('/', requireAdmin, listUsers);
+r.put('/:id', requireAdmin, validateAdminUserUpdate, adminUpdateUser);
 
 export default r;

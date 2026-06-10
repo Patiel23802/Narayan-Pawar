@@ -16,7 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Bell, Camera, MapPin, Menu, Send, Headphones, BadgeCheck } from 'lucide-react-native';
 import { colors, spacing, radii } from '../constants/theme';
 import { useLocale } from '../context/LocaleContext';
-import { api } from '../services/api';
+import { api, postFormData } from '../services/api';
 import { useRouter } from 'expo-router';
 
 const MAP_BG =
@@ -91,19 +91,29 @@ export function ComplaintRegisterScreen() {
     }
     setLoading(true);
     try {
-      const form = new FormData();
-      form.append('title', title.trim());
-      form.append('description', description);
-      form.append('location_text', location);
+      const payload = {
+        title: title.trim(),
+        description,
+        location_text: location,
+      };
       const file = imageFile();
-      if (file) form.append('image', file);
-      await api.post('/api/complaints', form, {
-        // Let axios set the correct multipart boundary automatically.
-        timeout: 60000,
-      });
+      if (file) {
+        const form = new FormData();
+        Object.entries(payload).forEach(([key, value]) => {
+          if (value != null && value !== '') form.append(key, String(value));
+        });
+        form.append('image', file);
+        await postFormData('/api/complaints', form);
+      } else {
+        await api.post('/api/complaints', payload);
+      }
       router.replace('/(tabs)/complaints');
     } catch (e) {
-      Alert.alert(t('error'), e.response?.data?.error || e.message);
+      const msg =
+        e.response?.data?.error ||
+        e.response?.data?.errors?.[0]?.msg ||
+        e.message;
+      Alert.alert(t('error'), msg);
     } finally {
       setLoading(false);
     }

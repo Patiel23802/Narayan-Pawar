@@ -115,6 +115,23 @@ export function getBaseUrl() {
   return baseURL;
 }
 
+/**
+ * Multipart uploads in React Native + axios often fail with "Network Error" unless
+ * FormData is passed through without axios setting Content-Type (boundary is required).
+ */
+export function postFormData(url, formData, config = {}) {
+  return api.post(url, formData, {
+    ...config,
+    timeout: config.timeout ?? 60000,
+    transformRequest: (data, headers) => {
+      if (typeof FormData !== 'undefined' && data instanceof FormData) {
+        delete headers['Content-Type'];
+      }
+      return data;
+    },
+  });
+}
+
 if (__DEV__) {
   console.log('[api] baseURL =', baseURL);
 }

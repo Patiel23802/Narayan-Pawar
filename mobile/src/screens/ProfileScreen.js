@@ -18,7 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { colors, spacing, radii } from '../constants/theme';
 import { useLocale } from '../context/LocaleContext';
 import { useAuth } from '../context/AuthContext';
-import { api } from '../services/api';
+import { api, postFormData } from '../services/api';
 import { mediaUrl } from '../utils/mediaUrl';
 import { useRouter } from 'expo-router';
 
@@ -89,9 +89,7 @@ export function ProfileScreen() {
       type: asset.mimeType || 'image/jpeg',
     });
     try {
-      await api.post('/api/users/upload-avatar', data, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      await postFormData('/api/users/upload-avatar', data);
       await refreshMe();
     } catch (e) {
       Alert.alert(t('error'), e.message);
